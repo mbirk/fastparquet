@@ -18,7 +18,7 @@ from .util import val_to_num, byte_buffer, ex_from_sep
 def _read_page(file_obj, page_header, column_metadata):
     """Read the data page from the given file-object and convert it to raw,
     uncompressed bytes (if necessary)."""
-    raw_bytes = file_obj.read(page_header.compressed_page_size)
+    raw_bytes = _read_bytes(file_obj, page_header.compressed_page_size)
     raw_bytes = decompress_data(
         raw_bytes,
         page_header.uncompressed_page_size,
@@ -31,6 +31,17 @@ def _read_page(file_obj, page_header, column_metadata):
             page_header.uncompressed_page_size)
     return raw_bytes
 
+def _read_bytes(file_obj, size):
+    result = file_obj.read(size)
+    if result:
+        size -= len(result)
+        while size > 0:
+            data = file_obj.read(size)
+            if not data:
+                break
+            result += data
+            size -= len(data)
+    return result
 
 def read_data(fobj, coding, count, bit_width):
     """For definition and repetition levels
