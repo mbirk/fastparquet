@@ -8,6 +8,7 @@ import array
 import numba
 import numpy as np
 
+from .core import _read_bytes
 from .speedups import unpack_byte_array
 from .thrift_structures import parquet_thrift
 from .util import byte_buffer
@@ -88,7 +89,7 @@ def read_rle(file_obj, header, bit_width, o):  # pragma: no cover
     count = header >> 1
     width = (bit_width + 7) // 8
     zero = np.zeros(4, dtype=np.int8)
-    data = file_obj.read(width)
+    data = _read_bytes(file_obj, width)
     zero[:len(data)] = data
     value = zero.view(np.int32)
     o.write_many(value, count)
@@ -120,7 +121,7 @@ def read_bitpacked(file_obj, header, width, o):  # pragma: no cover
     num_groups = header >> 1
     count = num_groups * 8
     byte_count = (width * count) // 8
-    raw_bytes = file_obj.read(byte_count)
+    raw_bytes = _read_bytes(file_obj, byte_count)
     mask = _mask_for_bits(width)
     current_byte = 0
     data = raw_bytes[current_byte]
@@ -171,7 +172,7 @@ def read_length(file_obj):  # pragma: no cover
 
     Equivalent to struct.unpack('<i'), but suitable for numba-jit
     """
-    sub = file_obj.read(4)
+    sub = _read_bytes(file_obj, 4)
     return sub[0] + sub[1]*256 + sub[2]*256*256 + sub[3]*256*256*256
 
 
